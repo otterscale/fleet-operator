@@ -86,7 +86,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.Get(ctx, types.NamespacedName{Name: m.Spec.ClusterRef}, &cl); err != nil {
 		if apierrors.IsNotFound(err) {
 			r.setReadyConditionFalse(ctx, &m, "ClusterNotFound", "Referenced Cluster does not exist")
-			return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
 	}
@@ -350,8 +350,42 @@ func (r *MachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			&metal3api.BareMetalHost{},
 			handler.EnqueueRequestsFromMapFunc(r.mapBMHToMachine),
 		).
+		Watches(
+			&fleetv1alpha1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(r.mapClusterToMachines),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
 		Named("machine").
 		Complete(r)
+}
+
+// mapClusterToMachines maps Cluster events to all Machines that reference it,
+// so that Machines react immediately when their Cluster is created or updated.
+//
+// TODO(perf): register a field indexer for spec.clusterRef and use
+// client.MatchingFields to avoid listing all Machine resources.
+func (r *MachineReconciler) mapClusterToMachines(ctx context.Context, obj client.Object) []reconcile.Request {
+	cl, ok := obj.(*fleetv1alpha1.Cluster)
+	if !ok {
+		return nil
+	}
+
+	var machines fleetv1alpha1.MachineList
+	if err := r.List(ctx, &machines); err != nil {
+		log.FromContext(ctx).Error(err, "Failed to list Machines for Cluster mapping")
+		return nil
+	}
+
+	var requests []reconcile.Request
+	for _, m := range machines.Items {
+		if m.Spec.ClusterRef == cl.Name {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: m.Name},
+			})
+		}
+	}
+
+	return requests
 }
 
 // mapBMHToMachine maps BareMetalHost events to the Machine that references it.
