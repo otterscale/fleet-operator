@@ -53,7 +53,6 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 	"$(CONTROLLER_GEN)" object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 API_VERSION ?= $(call gomodver,github.com/otterscale/api)
-
 BMO_VERSION ?= $(call gomodver,github.com/metal3-io/baremetal-operator/apis)
 
 .PHONY: download-crds
