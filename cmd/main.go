@@ -25,6 +25,10 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	metal3api "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
+	fleetv1alpha1 "github.com/otterscale/api/fleet/v1alpha1"
+	"github.com/otterscale/fleet-operator/internal/cluster"
+	"github.com/otterscale/fleet-operator/internal/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -45,6 +49,8 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(fleetv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(metal3api.AddToScheme(scheme))
 
 	// +kubebuilder:scaffold:scheme
 }
@@ -174,6 +180,27 @@ func main() {
 	})
 	if err != nil {
 		setupLog.Error(err, "Failed to start manager")
+		os.Exit(1)
+	}
+
+	if err := (&controller.ClusterReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Version:  version,
+		Recorder: mgr.GetEventRecorder("cluster-controller"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "Cluster")
+		os.Exit(1)
+	}
+
+	if err := (&controller.MachineReconciler{
+		Client:       mgr.GetClient(),
+		Scheme:       mgr.GetScheme(),
+		Version:      version,
+		Recorder:     mgr.GetEventRecorder("machine-controller"),
+		Bootstrapper: cluster.TalosBootstrapper{},
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "Machine")
 		os.Exit(1)
 	}
 

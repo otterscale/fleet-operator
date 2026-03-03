@@ -54,11 +54,15 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 
 API_VERSION ?= $(call gomodver,github.com/otterscale/api)
 
+BMO_VERSION ?= $(call gomodver,github.com/metal3-io/baremetal-operator/apis)
+
 .PHONY: download-crds
-download-crds: ## Download CRDs from the API module release.
+download-crds: ## Download CRDs from the API module and Metal3 BMO releases.
 	@mkdir -p config/crd/bases
 	curl -sSL -o config/crd/bases/crds.yaml \
 		https://github.com/otterscale/api/releases/download/$(API_VERSION)/crds.yaml
+	curl -sSL -o config/crd/bases/metal3.io_baremetalhosts.yaml \
+		https://raw.githubusercontent.com/metal3-io/baremetal-operator/$(BMO_VERSION)/config/base/crds/bases/metal3.io_baremetalhosts.yaml
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.

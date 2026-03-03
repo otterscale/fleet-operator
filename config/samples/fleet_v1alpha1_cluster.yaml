@@ -1,0 +1,23 @@
+apiVersion: fleet.otterscale.io/v1alpha1
+kind: Cluster
+metadata:
+  name: demo-cluster
+spec:
+  controlPlaneEndpoint:
+    host: "10.0.0.100"
+    port: 6443
+  talosVersion: "v1.9"
+  kubernetesVersion: "v1.32.0"
+  talosImage:
+    url: "http://pxe-server.example.com/talos-v1.9-amd64-metal.raw.xz"
+    checksum: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    checksumType: sha256
+    format: raw
+  clusterNetwork:
+    dnsDomain: cluster.local
+    podSubnets:
+      - "10.244.0.0/16"
+    serviceSubnets:
+      - "10.96.0.0/12"
+  controlPlaneConfig:
+    generateType: controlplane

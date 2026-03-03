@@ -1,0 +1,33 @@
+apiVersion: fleet.otterscale.io/v1alpha1
+kind: Machine
+metadata:
+  name: demo-cp-0
+spec:
+  clusterRef: demo-cluster
+  role: controlplane
+  bareMetalHostRef:
+    name: node-01
+    namespace: default
+  bootstrap: true
+---
+apiVersion: fleet.otterscale.io/v1alpha1
+kind: Machine
+metadata:
+  name: demo-cp-1
+spec:
+  clusterRef: demo-cluster
+  role: controlplane
+  bareMetalHostRef:
+    name: node-02
+    namespace: default
+---
+apiVersion: fleet.otterscale.io/v1alpha1
+kind: Machine
+metadata:
+  name: demo-cp-2
+spec:
+  clusterRef: demo-cluster
+  role: controlplane
+  bareMetalHostRef:
+    name: node-03
+    namespace: default

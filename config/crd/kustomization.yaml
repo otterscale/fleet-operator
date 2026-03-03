@@ -1,0 +1,3 @@
+resources:
+  - bases/fleet.otterscale.io_clusters.yaml
+  - bases/fleet.otterscale.io_machines.yaml
