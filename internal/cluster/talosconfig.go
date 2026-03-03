@@ -69,8 +69,9 @@ func ReconcileTalosconfig(ctx context.Context, c client.Client, scheme *runtime.
 		return c.Create(ctx, secret)
 	}
 
+	patch := client.MergeFrom(existing.DeepCopy())
 	existing.Data["talosconfig"] = []byte(tcYAML)
-	if err := c.Update(ctx, existing); err != nil {
+	if err := c.Patch(ctx, existing, patch); err != nil {
 		if k8serrors.IsConflict(err) {
 			logger.V(1).Info("Conflict updating talosconfig Secret, will retry")
 			return err

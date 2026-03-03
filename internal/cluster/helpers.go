@@ -29,7 +29,7 @@ const (
 	ConditionInfrastructureReady    = "InfrastructureReady"
 	ConditionBootstrapReady         = "BootstrapReady"
 	ConditionControlPlaneReady      = "ControlPlaneReady"
-	ConditionControlPlaneInitalized = "ControlPlaneInitialized"
+	ConditionControlPlaneInitialized = "ControlPlaneInitialized"
 	ConditionWorkersReady           = "WorkersReady"
 
 	// FinalizerMachineCleanup is applied to Machine resources to ensure

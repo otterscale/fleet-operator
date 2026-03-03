@@ -180,15 +180,13 @@ func (r *ClusterReconciler) updateStatus(ctx context.Context, cl *fleetv1alpha1.
 		Namespace: cluster.SecretsNamespace,
 	}
 
+	// TODO(perf): use a field indexer for spec.clusterRef (same as collectControlPlaneEndpoints)
 	var machines fleetv1alpha1.MachineList
 	if err := r.List(ctx, &machines); err != nil {
 		return err
 	}
 
-	cpTotal := 0
-	cpReady := 0
-	workerTotal := int32(0)
-	workerReady := int32(0)
+	var cpTotal, cpReady, workerTotal, workerReady int32
 	anyProvisioning := false
 	anyBootstrapped := false
 

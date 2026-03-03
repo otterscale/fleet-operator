@@ -65,13 +65,15 @@ func (TalosBootstrapper) Bootstrap(ctx context.Context, addresses []string, talo
 	}
 	defer c.Close() //nolint:errcheck
 
-	slices.Sort(addresses)
+	sorted := make([]string, len(addresses))
+	copy(sorted, addresses)
+	slices.Sort(sorted)
 
-	if err := c.Bootstrap(talosclient.WithNodes(ctx, addresses[0]), &machineapi.BootstrapRequest{}); err != nil {
+	if err := c.Bootstrap(talosclient.WithNodes(ctx, sorted[0]), &machineapi.BootstrapRequest{}); err != nil {
 		if status.Code(err) == codes.AlreadyExists {
 			return nil
 		}
-		return fmt.Errorf("failed to bootstrap node %s: %w", addresses[0], err)
+		return fmt.Errorf("failed to bootstrap node %s: %w", sorted[0], err)
 	}
 
 	return nil

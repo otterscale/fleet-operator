@@ -118,7 +118,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return r.handleReconcileError(ctx, &m, err)
 	}
 
-	if err := r.updateStatus(ctx, &cl, &m); err != nil {
+	if err := r.updateStatus(ctx, &m); err != nil {
 		return result, err
 	}
 
@@ -249,7 +249,7 @@ func (r *MachineReconciler) setReadyConditionFalse(ctx context.Context, m *fleet
 }
 
 // updateStatus calculates the observed status and patches the Machine.
-func (r *MachineReconciler) updateStatus(ctx context.Context, cl *fleetv1alpha1.Cluster, m *fleetv1alpha1.Machine) error {
+func (r *MachineReconciler) updateStatus(ctx context.Context, m *fleetv1alpha1.Machine) error {
 	newStatus := m.Status.DeepCopy()
 	newStatus.ObservedGeneration = m.Generation
 
