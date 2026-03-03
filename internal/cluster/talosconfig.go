@@ -73,7 +73,7 @@ func ReconcileTalosconfig(ctx context.Context, c client.Client, scheme *runtime.
 	if err := c.Update(ctx, existing); err != nil {
 		if k8serrors.IsConflict(err) {
 			logger.V(1).Info("Conflict updating talosconfig Secret, will retry")
-			return nil
+			return err
 		}
 		return fmt.Errorf("failed to update talosconfig Secret: %w", err)
 	}

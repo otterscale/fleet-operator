@@ -119,7 +119,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if err := r.updateStatus(ctx, &cl, &m); err != nil {
-		return ctrl.Result{}, err
+		return result, err
 	}
 
 	return result, nil
@@ -355,6 +355,9 @@ func (r *MachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // mapBMHToMachine maps BareMetalHost events to the Machine that references it.
+//
+// TODO(perf): register a field indexer for spec.bareMetalHostRef and use
+// client.MatchingFields to avoid listing all Machine resources.
 func (r *MachineReconciler) mapBMHToMachine(ctx context.Context, obj client.Object) []reconcile.Request {
 	bmh, ok := obj.(*metal3api.BareMetalHost)
 	if !ok {

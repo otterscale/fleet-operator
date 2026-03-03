@@ -107,6 +107,10 @@ func (r *ClusterReconciler) reconcileResources(ctx context.Context, cl *fleetv1a
 
 // collectControlPlaneEndpoints returns IP addresses from all control plane
 // Machines that have addresses available, used to populate the talosconfig.
+//
+// TODO(perf): register a field indexer for spec.clusterRef in SetupWithManager
+// and use client.MatchingFields{"spec.clusterRef": cl.Name} to avoid listing
+// all Machine resources across clusters.
 func (r *ClusterReconciler) collectControlPlaneEndpoints(ctx context.Context, cl *fleetv1alpha1.Cluster) ([]string, error) {
 	var machines fleetv1alpha1.MachineList
 	if err := r.List(ctx, &machines); err != nil {

@@ -97,18 +97,27 @@ func ReconcileMachineConfig(ctx context.Context, c client.Client, scheme *runtim
 // effectiveTalosConfig returns the TalosConfigSpec to use for a Machine,
 // preferring the Machine-level override, then falling back to the role-appropriate
 // Cluster-level default (WorkerConfig for workers, ControlPlaneConfig for control plane).
+// When GenerateType is empty, it defaults based on the Machine's role.
 func effectiveTalosConfig(cluster *fleetv1alpha1.Cluster, m *fleetv1alpha1.Machine) fleetv1alpha1.TalosConfigSpec {
 	if m.Spec.TalosConfig != nil {
 		return *m.Spec.TalosConfig
 	}
-	if m.Spec.Role == fleetv1alpha1.MachineRoleWorker {
-		cfg := cluster.Spec.WorkerConfig
+
+	var cfg fleetv1alpha1.TalosConfigSpec
+	switch m.Spec.Role {
+	case fleetv1alpha1.MachineRoleWorker:
+		cfg = cluster.Spec.WorkerConfig
 		if cfg.GenerateType == "" {
 			cfg.GenerateType = "worker"
 		}
-		return cfg
+	default:
+		cfg = cluster.Spec.ControlPlaneConfig
+		if cfg.GenerateType == "" {
+			cfg.GenerateType = "controlplane"
+		}
 	}
-	return cluster.Spec.ControlPlaneConfig
+
+	return cfg
 }
 
 func generateMachineConfig(cluster *fleetv1alpha1.Cluster, m *fleetv1alpha1.Machine, bundle *secrets.Bundle, tcSpec fleetv1alpha1.TalosConfigSpec) (string, error) {
@@ -201,11 +210,8 @@ func applyNetworkConfig(data config.Provider, network *fleetv1alpha1.ClusterNetw
 	}
 }
 
-func applyConfigPatches(cfgYAML string, patches []fleetv1alpha1.ConfigPatch, _ *config.VersionContract) (string, error) {
-	// Config patches are applied as RFC 6902 JSON patches to the YAML document.
-	// For simplicity in v1alpha1, patches are embedded in the generated config
-	// via the Talos configpatcher library. If additional patch semantics are needed,
-	// this can be extended to use strategic merge patches.
-	_ = patches
-	return cfgYAML, nil
+func applyConfigPatches(_ string, patches []fleetv1alpha1.ConfigPatch, _ *config.VersionContract) (string, error) {
+	return "", fmt.Errorf("configPatches is not yet supported in v1alpha1 "+
+		"(received %d patches); use generateType=none with a complete config instead",
+		len(patches))
 }

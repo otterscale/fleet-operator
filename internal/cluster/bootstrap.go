@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"time"
 
 	fleetv1alpha1 "github.com/otterscale/api/fleet/v1alpha1"
@@ -65,7 +65,7 @@ func (TalosBootstrapper) Bootstrap(ctx context.Context, addresses []string, talo
 	}
 	defer c.Close() //nolint:errcheck
 
-	sort.Strings(addresses)
+	slices.Sort(addresses)
 
 	if err := c.Bootstrap(talosclient.WithNodes(ctx, addresses[0]), &machineapi.BootstrapRequest{}); err != nil {
 		if status.Code(err) == codes.AlreadyExists {
