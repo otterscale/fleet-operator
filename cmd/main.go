@@ -25,10 +25,6 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	metal3api "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
-	fleetv1alpha1 "github.com/otterscale/api/fleet/v1alpha1"
-	"github.com/otterscale/fleet-operator/internal/cluster"
-	"github.com/otterscale/fleet-operator/internal/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -38,6 +34,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	metal3api "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
+	fleetv1alpha1 "github.com/otterscale/api/fleet/v1alpha1"
+
+	"github.com/otterscale/fleet-operator/internal/cluster"
+	"github.com/otterscale/fleet-operator/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 
