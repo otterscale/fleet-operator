@@ -73,7 +73,7 @@ func ReconcileMachineConfig(ctx context.Context, c client.Client, scheme *runtim
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: SecretsNamespace,
 			Name:      secretName,
-			Labels:    LabelsForMachine(m.Name, cluster.Name, version),
+			Labels:    LabelsForMachine(m.Name, cluster.Name, string(m.Spec.Role), version),
 		},
 		Data: map[string][]byte{
 			"value": []byte(configData),
@@ -95,10 +95,18 @@ func ReconcileMachineConfig(ctx context.Context, c client.Client, scheme *runtim
 }
 
 // effectiveTalosConfig returns the TalosConfigSpec to use for a Machine,
-// preferring the Machine-level override, falling back to the Cluster-level default.
+// preferring the Machine-level override, then falling back to the role-appropriate
+// Cluster-level default (WorkerConfig for workers, ControlPlaneConfig for control plane).
 func effectiveTalosConfig(cluster *fleetv1alpha1.Cluster, m *fleetv1alpha1.Machine) fleetv1alpha1.TalosConfigSpec {
 	if m.Spec.TalosConfig != nil {
 		return *m.Spec.TalosConfig
+	}
+	if m.Spec.Role == fleetv1alpha1.MachineRoleWorker {
+		cfg := cluster.Spec.WorkerConfig
+		if cfg.GenerateType == "" {
+			cfg.GenerateType = "worker"
+		}
+		return cfg
 	}
 	return cluster.Spec.ControlPlaneConfig
 }

@@ -30,6 +30,7 @@ const (
 	ConditionBootstrapReady         = "BootstrapReady"
 	ConditionControlPlaneReady      = "ControlPlaneReady"
 	ConditionControlPlaneInitalized = "ControlPlaneInitialized"
+	ConditionWorkersReady           = "WorkersReady"
 
 	// FinalizerMachineCleanup is applied to Machine resources to ensure
 	// BareMetalHost is deprovisioned before the Machine object is removed.
@@ -75,9 +76,15 @@ func LabelsForCluster(clusterName, version string) map[string]string {
 	return labels.Standard(clusterName, "cluster", version)
 }
 
+// LabelRole is the label key for the Machine role (controlplane or worker).
+const LabelRole = "fleet.otterscale.io/role"
+
 // LabelsForMachine returns the standard K8s recommended labels for machine-owned resources.
-func LabelsForMachine(machineName, clusterName, version string) map[string]string {
+func LabelsForMachine(machineName, clusterName, role, version string) map[string]string {
 	m := labels.Standard(machineName, "machine", version)
 	m["fleet.otterscale.io/cluster"] = clusterName
+	if role != "" {
+		m[LabelRole] = role
+	}
 	return m
 }

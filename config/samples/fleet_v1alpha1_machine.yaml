@@ -31,3 +31,25 @@ spec:
   bareMetalHostRef:
     name: node-03
     namespace: default
+---
+apiVersion: fleet.otterscale.io/v1alpha1
+kind: Machine
+metadata:
+  name: demo-worker-0
+spec:
+  clusterRef: demo-cluster
+  role: worker
+  bareMetalHostRef:
+    name: node-04
+    namespace: default
+---
+apiVersion: fleet.otterscale.io/v1alpha1
+kind: Machine
+metadata:
+  name: demo-worker-1
+spec:
+  clusterRef: demo-cluster
+  role: worker
+  bareMetalHostRef:
+    name: node-05
+    namespace: default

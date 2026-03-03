@@ -51,15 +51,26 @@ var _ = Describe("Helpers", func() {
 
 	Describe("LabelsForMachine", func() {
 		It("should return standard labels with machine and cluster names", func() {
-			l := LabelsForMachine("my-machine", "my-cluster", "v1.0.0")
+			l := LabelsForMachine("my-machine", "my-cluster", "controlplane", "v1.0.0")
 			Expect(l).To(HaveKeyWithValue(labels.Name, "my-machine"))
 			Expect(l).To(HaveKeyWithValue(labels.Component, "machine"))
 			Expect(l).To(HaveKeyWithValue("fleet.otterscale.io/cluster", "my-cluster"))
+			Expect(l).To(HaveKeyWithValue(LabelRole, "controlplane"))
+		})
+
+		It("should include worker role label for worker machines", func() {
+			l := LabelsForMachine("my-worker", "my-cluster", "worker", "v1.0.0")
+			Expect(l).To(HaveKeyWithValue(LabelRole, "worker"))
 		})
 
 		It("should omit version label when version is empty", func() {
-			l := LabelsForMachine("m", "c", "")
+			l := LabelsForMachine("m", "c", "worker", "")
 			Expect(l).NotTo(HaveKey(labels.Version))
+		})
+
+		It("should omit role label when role is empty", func() {
+			l := LabelsForMachine("m", "c", "", "v1.0.0")
+			Expect(l).NotTo(HaveKey(LabelRole))
 		})
 	})
 })

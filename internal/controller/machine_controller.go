@@ -102,6 +102,13 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
+	if m.Spec.Role == fleetv1alpha1.MachineRoleWorker && m.Spec.Bootstrap {
+		return r.handleReconcileError(ctx, &m, &cluster.InvalidConfigError{
+			Field:   "bootstrap",
+			Message: "worker nodes cannot be bootstrap nodes",
+		})
+	}
+
 	if err := r.reconcileResources(ctx, &cl, &m); err != nil {
 		return r.handleReconcileError(ctx, &m, err)
 	}

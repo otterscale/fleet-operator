@@ -21,3 +21,5 @@ spec:
       - "10.96.0.0/12"
   controlPlaneConfig:
     generateType: controlplane
+  workerConfig:
+    generateType: worker

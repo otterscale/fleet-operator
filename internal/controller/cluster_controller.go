@@ -20,6 +20,7 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	fleetv1alpha1 "github.com/otterscale/api/fleet/v1alpha1"
@@ -182,27 +183,42 @@ func (r *ClusterReconciler) updateStatus(ctx context.Context, cl *fleetv1alpha1.
 
 	cpTotal := 0
 	cpReady := 0
+	workerTotal := int32(0)
+	workerReady := int32(0)
 	anyProvisioning := false
 	anyBootstrapped := false
 
 	for _, m := range machines.Items {
-		if m.Spec.ClusterRef != cl.Name || m.Spec.Role != fleetv1alpha1.MachineRoleControlPlane {
+		if m.Spec.ClusterRef != cl.Name {
 			continue
 		}
-		cpTotal++
-		if m.Status.Ready {
-			cpReady++
-		}
-		if m.Status.Phase == fleetv1alpha1.MachinePhaseProvisioning || m.Status.Phase == fleetv1alpha1.MachinePhaseBootstrapping {
-			anyProvisioning = true
-		}
-		if m.Status.BootstrapReady {
-			anyBootstrapped = true
+		switch m.Spec.Role {
+		case fleetv1alpha1.MachineRoleControlPlane:
+			cpTotal++
+			if m.Status.Ready {
+				cpReady++
+			}
+			if m.Status.Phase == fleetv1alpha1.MachinePhaseProvisioning || m.Status.Phase == fleetv1alpha1.MachinePhaseBootstrapping {
+				anyProvisioning = true
+			}
+			if m.Status.BootstrapReady {
+				anyBootstrapped = true
+			}
+		case fleetv1alpha1.MachineRoleWorker:
+			workerTotal++
+			if m.Status.Ready {
+				workerReady++
+			}
+			if m.Status.Phase == fleetv1alpha1.MachinePhaseProvisioning || m.Status.Phase == fleetv1alpha1.MachinePhaseBootstrapping {
+				anyProvisioning = true
+			}
 		}
 	}
 
 	newStatus.ControlPlaneReady = cpTotal > 0 && cpReady == cpTotal
 	newStatus.Initialized = anyBootstrapped
+	newStatus.ReadyWorkers = workerReady
+	newStatus.TotalWorkers = workerTotal
 
 	switch {
 	case cpTotal == 0:
@@ -232,6 +248,23 @@ func (r *ClusterReconciler) updateStatus(ctx context.Context, cl *fleetv1alpha1.
 		Message:            "Talosconfig client configuration is available",
 		ObservedGeneration: cl.Generation,
 	})
+
+	if workerTotal > 0 {
+		wStatus := metav1.ConditionFalse
+		wReason := "WorkersProvisioning"
+		wMessage := fmt.Sprintf("%d/%d worker nodes are ready", workerReady, workerTotal)
+		if workerReady == workerTotal {
+			wStatus = metav1.ConditionTrue
+			wReason = "AllWorkersReady"
+		}
+		meta.SetStatusCondition(&newStatus.Conditions, metav1.Condition{
+			Type:               cluster.ConditionWorkersReady,
+			Status:             wStatus,
+			Reason:             wReason,
+			Message:            wMessage,
+			ObservedGeneration: cl.Generation,
+		})
+	}
 
 	readyStatus := metav1.ConditionFalse
 	readyReason := "NotReady"

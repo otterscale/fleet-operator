@@ -249,9 +249,194 @@ var _ = Describe("MachineReconciler", func() {
 	})
 })
 
+var _ = Describe("MachineReconciler - Worker", func() {
+	const (
+		clusterName    = "test-worker-cluster"
+		workerName     = "test-worker"
+		workerBMHName  = "test-worker-bmh"
+		bmhNS          = "default"
+	)
+
+	var (
+		reconciler   *MachineReconciler
+		clReconciler *ClusterReconciler
+		cl           *fleetv1alpha1.Cluster
+		worker       *fleetv1alpha1.Machine
+		bmh          *metal3api.BareMetalHost
+		bootstrapper *mockBootstrapper
+		ns           *corev1.Namespace
+	)
+
+	BeforeEach(func() {
+		ns = &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: cluster.SecretsNamespace},
+		}
+		_ = k8sClient.Create(ctx, ns)
+
+		bootstrapper = &mockBootstrapper{}
+
+		reconciler = &MachineReconciler{
+			Client:       k8sClient,
+			Scheme:       scheme.Scheme,
+			Version:      "test",
+			Recorder:     &fakeRecorder{},
+			Bootstrapper: bootstrapper,
+		}
+
+		clReconciler = &ClusterReconciler{
+			Client:   k8sClient,
+			Scheme:   scheme.Scheme,
+			Version:  "test",
+			Recorder: &fakeRecorder{},
+		}
+
+		cl = &fleetv1alpha1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterName,
+			},
+			Spec: fleetv1alpha1.ClusterSpec{
+				ControlPlaneEndpoint: fleetv1alpha1.Endpoint{
+					Host: "10.0.0.1",
+					Port: 6443,
+				},
+				TalosVersion:      "v1.9",
+				KubernetesVersion: "v1.32.0",
+				TalosImage: fleetv1alpha1.ImageSpec{
+					URL:          "http://example.com/talos.raw",
+					Checksum:     "abc123",
+					ChecksumType: "sha256",
+					Format:       "raw",
+				},
+				ControlPlaneConfig: fleetv1alpha1.TalosConfigSpec{
+					GenerateType: "controlplane",
+				},
+				WorkerConfig: fleetv1alpha1.TalosConfigSpec{
+					GenerateType: "worker",
+				},
+			},
+		}
+
+		bmh = &metal3api.BareMetalHost{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      workerBMHName,
+				Namespace: bmhNS,
+			},
+			Spec: metal3api.BareMetalHostSpec{
+				BMC: metal3api.BMCDetails{
+					Address:         "ipmi://192.168.1.10",
+					CredentialsName: "bmc-creds",
+				},
+				BootMACAddress: "00:11:22:33:44:66",
+			},
+		}
+
+		worker = &fleetv1alpha1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: workerName,
+			},
+			Spec: fleetv1alpha1.MachineSpec{
+				ClusterRef: clusterName,
+				Role:       fleetv1alpha1.MachineRoleWorker,
+				BareMetalHostRef: fleetv1alpha1.BareMetalHostReference{
+					Name:      workerBMHName,
+					Namespace: bmhNS,
+				},
+			},
+		}
+	})
+
+	JustBeforeEach(func() {
+		Expect(k8sClient.Create(ctx, cl)).To(Succeed())
+
+		_, err := clReconciler.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: clusterName},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(k8sClient.Create(ctx, bmh)).To(Succeed())
+		Expect(k8sClient.Create(ctx, worker)).To(Succeed())
+	})
+
+	AfterEach(func() {
+		updated := &fleetv1alpha1.Machine{}
+		if err := k8sClient.Get(ctx, types.NamespacedName{Name: workerName}, updated); err == nil {
+			controllerutil.RemoveFinalizer(updated, cluster.FinalizerMachineCleanup)
+			_ = k8sClient.Update(ctx, updated)
+			_ = k8sClient.Delete(ctx, updated)
+		}
+		_ = client.IgnoreNotFound(k8sClient.Delete(ctx, bmh))
+		_ = client.IgnoreNotFound(k8sClient.Delete(ctx, cl))
+
+		secretsList := &corev1.SecretList{}
+		_ = k8sClient.List(ctx, secretsList, client.InNamespace(cluster.SecretsNamespace))
+		for i := range secretsList.Items {
+			_ = client.IgnoreNotFound(k8sClient.Delete(ctx, &secretsList.Items[i]))
+		}
+	})
+
+	It("should create worker bootstrap data Secret with worker config type", func() {
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: workerName},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		secret := &corev1.Secret{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Namespace: cluster.SecretsNamespace,
+			Name:      workerName + cluster.BootstrapDataSuffix,
+		}, secret)).To(Succeed())
+		Expect(secret.Data).To(HaveKey("value"))
+		Expect(secret.Labels).To(HaveKeyWithValue(cluster.LabelRole, "worker"))
+	})
+
+	It("should not trigger Talos bootstrap for worker nodes", func() {
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: workerName},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(bootstrapper.bootstrapCalled).To(BeFalse())
+	})
+
+	It("should reject worker with bootstrap=true at admission via CEL", func() {
+		badWorker := &fleetv1alpha1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "bad-worker",
+			},
+			Spec: fleetv1alpha1.MachineSpec{
+				ClusterRef: clusterName,
+				Role:       fleetv1alpha1.MachineRoleWorker,
+				BareMetalHostRef: fleetv1alpha1.BareMetalHostReference{
+					Name:      workerBMHName,
+					Namespace: bmhNS,
+				},
+				Bootstrap: true,
+			},
+		}
+		err := k8sClient.Create(ctx, badWorker)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("worker nodes cannot be bootstrap nodes"))
+	})
+
+	It("should patch BareMetalHost with Talos image for worker", func() {
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: workerName},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		updatedBMH := &metal3api.BareMetalHost{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      workerBMHName,
+			Namespace: bmhNS,
+		}, updatedBMH)).To(Succeed())
+
+		Expect(updatedBMH.Spec.Image).NotTo(BeNil())
+		Expect(updatedBMH.Spec.Image.URL).To(Equal("http://example.com/talos.raw"))
+		Expect(updatedBMH.Spec.Online).To(BeTrue())
+	})
+})
+
 var _ runtime.Object // suppress unused import
 
 func init() {
-	// ensure fakeRecorder is used in both test files
 	_ = &fakeRecorder{}
 }

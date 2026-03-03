@@ -153,6 +153,41 @@ var _ = Describe("ClusterReconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result).To(Equal(ctrl.Result{}))
 	})
+
+	It("should track worker counts in status when worker Machines exist", func() {
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: clusterName},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		worker := &fleetv1alpha1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-worker-status",
+			},
+			Spec: fleetv1alpha1.MachineSpec{
+				ClusterRef: clusterName,
+				Role:       fleetv1alpha1.MachineRoleWorker,
+				BareMetalHostRef: fleetv1alpha1.BareMetalHostReference{
+					Name:      "some-bmh",
+					Namespace: "default",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, worker)).To(Succeed())
+		defer func() {
+			_ = client.IgnoreNotFound(k8sClient.Delete(ctx, worker))
+		}()
+
+		_, err = reconciler.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: clusterName},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		updated := &fleetv1alpha1.Cluster{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: clusterName}, updated)).To(Succeed())
+		Expect(updated.Status.TotalWorkers).To(Equal(int32(1)))
+		Expect(updated.Status.ReadyWorkers).To(Equal(int32(0)))
+	})
 })
 
 type fakeRecorder struct{}
