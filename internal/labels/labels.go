@@ -40,7 +40,7 @@ const (
 	System = "otterscale-system"
 
 	// Operator is the ManagedBy value for this operator.
-	Operator = "operator-template"
+	Operator = "fleet-operator"
 )
 
 // Standard returns the base set of Kubernetes recommended labels for all

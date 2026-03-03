@@ -1,4 +1,4 @@
-module github.com/otterscale/operator-template
+module github.com/otterscale/fleet-operator
 
 go 1.26.0
 

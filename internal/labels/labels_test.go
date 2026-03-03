@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/otterscale/operator-template/internal/labels"
+	"github.com/otterscale/fleet-operator/internal/labels"
 )
 
 var _ = Describe("Standard", func() {
@@ -86,8 +86,8 @@ var _ = Describe("Standard", func() {
 			Expect(labels.System).To(Equal("otterscale-system"))
 		})
 
-		It("Operator constant equals operator-template", func() {
-			Expect(labels.Operator).To(Equal("operator-template"))
+		It("Operator constant equals fleet-operator", func() {
+			Expect(labels.Operator).To(Equal("fleet-operator"))
 		})
 	})
 })
