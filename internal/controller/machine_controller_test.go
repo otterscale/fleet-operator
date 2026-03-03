@@ -64,13 +64,13 @@ var _ = Describe("MachineReconciler", func() {
 	)
 
 	var (
-		reconciler     *MachineReconciler
-		clReconciler   *ClusterReconciler
-		cl             *fleetv1alpha1.Cluster
-		m              *fleetv1alpha1.Machine
-		bmh            *metal3api.BareMetalHost
-		bootstrapper   *mockBootstrapper
-		ns             *corev1.Namespace
+		reconciler   *MachineReconciler
+		clReconciler *ClusterReconciler
+		cl           *fleetv1alpha1.Cluster
+		m            *fleetv1alpha1.Machine
+		bmh          *metal3api.BareMetalHost
+		bootstrapper *mockBootstrapper
+		ns           *corev1.Namespace
 	)
 
 	BeforeEach(func() {
@@ -250,10 +250,10 @@ var _ = Describe("MachineReconciler", func() {
 
 var _ = Describe("MachineReconciler - Worker", func() {
 	const (
-		clusterName    = "test-worker-cluster"
-		workerName     = "test-worker"
-		workerBMHName  = "test-worker-bmh"
-		bmhNS          = "default"
+		clusterName   = "test-worker-cluster"
+		workerName    = "test-worker"
+		workerBMHName = "test-worker-bmh"
+		bmhNS         = "default"
 	)
 
 	var (
@@ -433,4 +433,3 @@ var _ = Describe("MachineReconciler - Worker", func() {
 		Expect(updatedBMH.Spec.Online).To(BeTrue())
 	})
 })
-

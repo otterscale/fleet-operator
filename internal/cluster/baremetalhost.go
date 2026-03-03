@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	fleetv1alpha1 "github.com/otterscale/api/fleet/v1alpha1"
 	metal3api "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
+	fleetv1alpha1 "github.com/otterscale/api/fleet/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"

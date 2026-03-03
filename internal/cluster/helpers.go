@@ -23,14 +23,14 @@ import (
 )
 
 const (
-	ConditionTypeReady              = "Ready"
-	ConditionSecretsReady           = "SecretsReady"
-	ConditionTalosconfigReady       = "TalosconfigReady"
-	ConditionInfrastructureReady    = "InfrastructureReady"
-	ConditionBootstrapReady         = "BootstrapReady"
-	ConditionControlPlaneReady      = "ControlPlaneReady"
+	ConditionTypeReady               = "Ready"
+	ConditionSecretsReady            = "SecretsReady"
+	ConditionTalosconfigReady        = "TalosconfigReady"
+	ConditionInfrastructureReady     = "InfrastructureReady"
+	ConditionBootstrapReady          = "BootstrapReady"
+	ConditionControlPlaneReady       = "ControlPlaneReady"
 	ConditionControlPlaneInitialized = "ControlPlaneInitialized"
-	ConditionWorkersReady           = "WorkersReady"
+	ConditionWorkersReady            = "WorkersReady"
 
 	// FinalizerMachineCleanup is applied to Machine resources to ensure
 	// BareMetalHost is deprovisioned before the Machine object is removed.
