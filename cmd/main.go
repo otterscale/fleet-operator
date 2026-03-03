@@ -34,6 +34,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	metal3api "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
+	fleetv1alpha1 "github.com/otterscale/api/fleet/v1alpha1"
+
+	"github.com/otterscale/fleet-operator/internal/cluster"
+	"github.com/otterscale/fleet-operator/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -45,7 +51,9 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(metal3api.AddToScheme(scheme))
 
+	utilruntime.Must(fleetv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -159,7 +167,7 @@ func main() {
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "operator-template-leader-election",
+		LeaderElectionID:       "fleet-operator-leader-election",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -174,6 +182,27 @@ func main() {
 	})
 	if err != nil {
 		setupLog.Error(err, "Failed to start manager")
+		os.Exit(1)
+	}
+
+	if err := (&controller.ClusterReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Version:  version,
+		Recorder: mgr.GetEventRecorder("cluster-controller"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "Cluster")
+		os.Exit(1)
+	}
+
+	if err := (&controller.MachineReconciler{
+		Client:       mgr.GetClient(),
+		Scheme:       mgr.GetScheme(),
+		Version:      version,
+		Recorder:     mgr.GetEventRecorder("machine-controller"),
+		Bootstrapper: cluster.TalosBootstrapper{},
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "Machine")
 		os.Exit(1)
 	}
 
