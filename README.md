@@ -1,4 +1,4 @@
-# OtterScale Operator Template
+# OtterScale Fleet Operator
 
 [![Tests](https://github.com/otterscale/fleet-operator/actions/workflows/test.yml/badge.svg)](https://github.com/otterscale/fleet-operator/actions/workflows/test.yml)
 [![Lint](https://github.com/otterscale/fleet-operator/actions/workflows/lint.yml/badge.svg)](https://github.com/otterscale/fleet-operator/actions/workflows/lint.yml)
