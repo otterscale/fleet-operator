@@ -192,5 +192,5 @@ var _ = Describe("ClusterReconciler", func() {
 
 type fakeRecorder struct{}
 
-func (f *fakeRecorder) Eventf(_ runtime.Object, _ runtime.Object, _ string, _, _ string, _ string, _ ...interface{}) {
+func (f *fakeRecorder) Eventf(_ runtime.Object, _ runtime.Object, _ string, _, _ string, _ string, _ ...any) {
 }
