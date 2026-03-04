@@ -6,7 +6,7 @@ require (
 	github.com/metal3-io/baremetal-operator/apis v0.12.2
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
-	github.com/otterscale/api v0.8.17
+	github.com/otterscale/api v0.8.18
 	github.com/siderolabs/talos/pkg/machinery v1.12.4
 	google.golang.org/grpc v1.77.0
 	gopkg.in/yaml.v2 v2.4.0
